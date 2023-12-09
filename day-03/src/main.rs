@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{env, fs, io, str::FromStr};
 
 #[derive(Clone, Copy, Debug)]
 enum Elem {
@@ -70,13 +70,16 @@ impl Map {
         }
         nums
     }
-    fn numeric_neighbors(&self, index: usize) -> Vec<u32> {
-        self.neighbor_indices(index)
-            .into_iter()
-            .filter_map(|i| match self.symbols[i] {
-                Elem::Num(n) => Some(n),
-                _ => None,
-            })
+    fn part_numbers(&self) -> Vec<u32> {
+        let has_symbol_neighbor = |i| {
+            self.neighbor_indices(i)
+                .into_iter()
+                .any(|n| matches!(self.symbols[n], Elem::Sym(_)))
+        };
+        self.map_nums()
+            .iter()
+            .filter(|n| (n.start_index..n.start_index + n.length).any(has_symbol_neighbor))
+            .map(|n| n.value)
             .collect()
     }
 
@@ -130,61 +133,42 @@ impl FromStr for Map {
     }
 }
 
-fn main() {
-    // [X] parse input into Map type
-    // [ ] given and index, list all numbers adjacent
+fn part_01(input: &str) -> String {
+    let map = input.parse::<Map>().expect("Input is well formed");
+    map.part_numbers().iter().sum::<u32>().to_string()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+fn part_02(input: &str) -> String {
+    "TODO".to_string()
+}
 
-    #[test]
-    fn map_stride_is_length_of_lines() {
-        let i = "...\n\
-                 .#.\n\
-                 ...";
-        let m = i.parse::<Map>().unwrap();
-        assert_eq!(m.stride, 3);
-    }
+enum AOCErr {
+    NoInputProvided,
+    CannotReadFile(io::Error),
+}
 
-    #[test]
-    fn index_with_no_numeric_neighbors() {
-        let i = "...\n\
-                 .#.\n\
-                 ...";
-        let m = i.parse::<Map>().unwrap();
-        let index = 4; // Index of '#'
-        assert_eq!(m.numeric_neighbors(index), []);
+fn err_msg(err: &AOCErr, program: &str) -> String {
+    match err {
+        AOCErr::NoInputProvided => format!("Usage: {program} <input_filename>"),
+        AOCErr::CannotReadFile(reason) => format!("Could not read input: {reason}"),
     }
+}
 
-    #[test]
-    fn index_with_top_left_numeric_neighbors() {
-        let i = "3..\n\
-                 .#.\n\
-                 ...";
-        let m = i.parse::<Map>().unwrap();
-        let index = 4; // Index of '#'
-        assert_eq!(m.numeric_neighbors(index), [3]);
-    }
+fn main() -> Result<(), String> {
+    let args = env::args().collect::<Vec<String>>();
+    let program = &args[0];
 
-    #[test]
-    fn index_with_multiple_neighbors() {
-        let i = "3.4\n\
-                 5#6\n\
-                 .7.";
-        let m = i.parse::<Map>().unwrap();
-        let index = 4; // Index of '#'
-        assert_eq!(m.numeric_neighbors(index), [3, 4, 5, 6, 7]);
-    }
+    let input = args
+        .get(1)
+        .ok_or(AOCErr::NoInputProvided)
+        .and_then(|path| fs::read_to_string(path).map_err(AOCErr::CannotReadFile))
+        .map_err(|err| err_msg(&err, program))?;
 
-    #[test]
-    fn index_with_multi_digit_neighbor() {
-        let i = "345\n\
-                 .#.\n\
-                 ...";
-        let m = i.parse::<Map>().unwrap();
-        let index = 4; // Index of '#'
-        assert_eq!(m.numeric_neighbors(index), [345]);
-    }
+    println!(
+        "[advent-of-code-2023:day_03:part_01] {result_01}\n\
+         [advent-of-code-2023:day_03:part_02] {result_02}",
+        result_01 = part_01(&input),
+        result_02 = part_02(&input)
+    );
+    Ok(())
 }
