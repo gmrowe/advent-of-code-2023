@@ -1,17 +1,6 @@
+use std::collections::HashSet;
 use std::str::FromStr;
 use std::{env, fs, io};
-// for each line in file
-//   Create a GameCard structure
-//   Calculate the GameCard score
-//   sum all scores
-// input
-//     .lines()
-//     .map(parse::<GameCard>().unwrap())
-//     .map(|gc| gc.score())
-//     .sum()
-//     .to_string()
-
-use std::collections::HashSet;
 
 struct GameCard {
     player_numbers: Vec<u32>,
@@ -20,10 +9,14 @@ struct GameCard {
 }
 
 impl GameCard {
-    fn score(&self) -> u32 {
+    fn match_count(&self) -> usize {
         let player = self.player_numbers.iter().collect::<HashSet<_>>();
         let winning = self.winning_numbers.iter().collect::<HashSet<_>>();
-        let matching = player.intersection(&winning).count();
+        player.intersection(&winning).count()
+    }
+
+    fn score(&self) -> u32 {
+        let matching = self.match_count();
         if matching == 0 {
             0
         } else {
@@ -68,8 +61,20 @@ fn part_01(input: &str) -> String {
         .to_string()
 }
 
-fn part_02(_input: &str) -> String {
-    "TODO".to_string()
+fn part_02(input: &str) -> String {
+    let game_cards = input
+        .lines()
+        .map(|line| line.parse::<GameCard>().unwrap())
+        .collect::<Vec<_>>();
+    let mut copies = vec![1; game_cards.len() + 1];
+    copies[0] = 0;
+    for gc in game_cards.iter() {
+        let id_copies = copies[gc.id];
+        for id in copies.iter_mut().skip(gc.id + 1).take(gc.match_count()) {
+            *id += id_copies;
+        }
+    }
+    copies.iter().sum::<usize>().to_string()
 }
 
 enum AOCErr {
@@ -107,61 +112,64 @@ fn main() -> Result<(), String> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn a_game_card_with_0_matching_numbers_scores_0() {
-        let game_card = GameCard {
-            id: 0,
-            player_numbers: vec![1, 2, 3, 4, 5],
-            winning_numbers: vec![6, 7, 8, 9, 10],
-        };
-        assert_eq!(game_card.score(), 0);
-    }
+    mod part_01_tests {
+        use super::*;
+        #[test]
+        fn a_game_card_with_0_matching_numbers_scores_0() {
+            let game_card = GameCard {
+                id: 0,
+                player_numbers: vec![1, 2, 3, 4, 5],
+                winning_numbers: vec![6, 7, 8, 9, 10],
+            };
+            assert_eq!(game_card.score(), 0);
+        }
 
-    #[test]
-    fn a_game_card_with_1_matching_numbers_scores_1() {
-        let game_card = GameCard {
-            id: 0,
-            player_numbers: vec![1, 2, 3, 4, 5],
-            winning_numbers: vec![5, 6, 7, 8, 9],
-        };
-        assert_eq!(game_card.score(), 1);
-    }
+        #[test]
+        fn a_game_card_with_1_matching_numbers_scores_1() {
+            let game_card = GameCard {
+                id: 0,
+                player_numbers: vec![1, 2, 3, 4, 5],
+                winning_numbers: vec![5, 6, 7, 8, 9],
+            };
+            assert_eq!(game_card.score(), 1);
+        }
 
-    #[test]
-    fn a_game_card_with_3_matching_numbers_scores_8() {
-        let game_card = GameCard {
-            id: 0,
-            player_numbers: vec![1, 2, 3, 4, 5],
-            winning_numbers: vec![1, 6, 3, 5, 9],
-        };
-        assert_eq!(game_card.score(), 4);
-    }
+        #[test]
+        fn a_game_card_with_3_matching_numbers_scores_8() {
+            let game_card = GameCard {
+                id: 0,
+                player_numbers: vec![1, 2, 3, 4, 5],
+                winning_numbers: vec![1, 6, 3, 5, 9],
+            };
+            assert_eq!(game_card.score(), 4);
+        }
 
-    #[test]
-    fn a_game_card_string_when_parsed_has_an_id() {
-        let line = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
-        let game_card = line.parse::<GameCard>().unwrap();
-        assert_eq!(game_card.id, 1);
-    }
+        #[test]
+        fn a_game_card_string_when_parsed_has_an_id() {
+            let line = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
+            let game_card = line.parse::<GameCard>().unwrap();
+            assert_eq!(game_card.id, 1);
+        }
 
-    #[test]
-    fn a_game_card_string_when_multiple_spaces_before_id_can_be_parsed() {
-        let line = "Card   1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
-        let game_card = line.parse::<GameCard>().unwrap();
-        assert_eq!(game_card.id, 1);
-    }
+        #[test]
+        fn a_game_card_string_when_multiple_spaces_before_id_can_be_parsed() {
+            let line = "Card   1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
+            let game_card = line.parse::<GameCard>().unwrap();
+            assert_eq!(game_card.id, 1);
+        }
 
-    #[test]
-    fn a_game_card_string_when_parsed_has_winning_numbers() {
-        let line = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
-        let game_card = line.parse::<GameCard>().unwrap();
-        assert_eq!(game_card.winning_numbers, [41, 48, 83, 86, 17]);
-    }
+        #[test]
+        fn a_game_card_string_when_parsed_has_winning_numbers() {
+            let line = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
+            let game_card = line.parse::<GameCard>().unwrap();
+            assert_eq!(game_card.winning_numbers, [41, 48, 83, 86, 17]);
+        }
 
-    #[test]
-    fn a_game_card_string_when_parsed_has_player_numbers() {
-        let line = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
-        let game_card = line.parse::<GameCard>().unwrap();
-        assert_eq!(game_card.player_numbers, [83, 86, 6, 31, 17, 9, 48, 53]);
+        #[test]
+        fn a_game_card_string_when_parsed_has_player_numbers() {
+            let line = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
+            let game_card = line.parse::<GameCard>().unwrap();
+            assert_eq!(game_card.player_numbers, [83, 86, 6, 31, 17, 9, 48, 53]);
+        }
     }
 }
