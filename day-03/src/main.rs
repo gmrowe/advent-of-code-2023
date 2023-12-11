@@ -83,6 +83,32 @@ impl Map {
             .collect()
     }
 
+    fn is_neighbor(&self, index: usize, map_num: &MapNum) -> bool {
+        self.neighbor_indices(index)
+            .iter()
+            .any(|&j| map_num.start_index <= j && j < map_num.start_index + map_num.length)
+    }
+
+    fn gears(&self) -> Vec<(u32, u32)> {
+        let nums = self.map_nums();
+        self.symbols
+            .iter()
+            .enumerate()
+            .filter(|(_, s)| matches!(s, Elem::Sym('*')))
+            .filter_map(|(i, _)| {
+                let adjacent_nums = nums
+                    .iter()
+                    .filter(|n| self.is_neighbor(i, n))
+                    .collect::<Vec<_>>();
+                if adjacent_nums.len() == 2 {
+                    Some((adjacent_nums[0].value, adjacent_nums[1].value))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     fn neighbor_indices(&self, index: usize) -> Vec<usize> {
         let num_rows = self.symbols.len() / self.stride;
         let row = index / self.stride;
@@ -134,12 +160,24 @@ impl FromStr for Map {
 }
 
 fn part_01(input: &str) -> String {
-    let map = input.parse::<Map>().expect("Input is well formed");
-    map.part_numbers().iter().sum::<u32>().to_string()
+    input
+        .parse::<Map>()
+        .expect("Input is well formed")
+        .part_numbers()
+        .iter()
+        .sum::<u32>()
+        .to_string()
 }
 
 fn part_02(input: &str) -> String {
-    "TODO".to_string()
+    input
+        .parse::<Map>()
+        .expect("Input is well formed")
+        .gears()
+        .into_iter()
+        .map(|(a, b)| a * b)
+        .sum::<u32>()
+        .to_string()
 }
 
 enum AOCErr {
