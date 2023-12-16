@@ -95,11 +95,11 @@ impl AgMap {
 mod test {
     use super::*;
 
-    mod with_a_valid_mapping_range {
+    mod mapping_range {
         use super::*;
 
         fn test_mapping_range() -> MappingRange {
-            MappingRange::new(52, 98, 4)
+            MappingRange::new(98, 52, 4)
         }
 
         #[test]
@@ -131,7 +131,7 @@ mod test {
         }
     }
 
-    mod with_a_valid_mapping {
+    mod mapping {
         use super::*;
 
         #[test]
@@ -140,7 +140,7 @@ mod test {
                 .with_range(MappingRange::new(50, 98, 2))
                 .with_range(MappingRange::new(52, 50, 48));
             let source = 55;
-            assert_eq!(mapping.convert(source), 53);
+            assert_eq!(mapping.convert(source), 57);
         }
 
         #[test]
@@ -164,30 +164,58 @@ mod test {
             assert_eq!(mapping.dest_category, "fertilizer")
         }
     }
+    mod agmap {
+        use super::*;
 
-    #[test]
-    fn when_an_ag_map_is_created_it_has_no_mappings() {
-        let ag_map = AgMap::default();
-        assert_eq!(ag_map.mappings_len(), 0)
-    }
+        #[test]
+        fn when_first_created_it_has_no_mappings() {
+            let ag_map = AgMap::default();
+            assert_eq!(ag_map.mappings_len(), 0)
+        }
 
-    #[test]
-    fn an_ag_map_can_have_mappings_added() {
-        let ag_map = AgMap::default().with_mapping(Mapping::default());
-        assert_eq!(ag_map.mappings_len(), 1);
-    }
+        #[test]
+        fn can_have_mappings_added() {
+            let ag_map = AgMap::default().with_mapping(Mapping::default());
+            assert_eq!(ag_map.mappings_len(), 1);
+        }
 
-    #[test]
-    fn an_ag_map_with_valid_mappings_can_convert_source_input_to_dest_output() {
-        let seed_to_soil = Mapping::new("seed", "soil")
-            .with_range(MappingRange::new(50, 98, 2))
-            .with_range(MappingRange::new(52, 50, 48));
-        let soil_to_fertilizer = Mapping::new("soil", "fertilizer")
-            .with_range(MappingRange::new(0, 15, 37))
-            .with_range(MappingRange::new(37, 52, 2))
-            .with_range(MappingRange::new(39, 0, 15));
-        let ag_map = AgMap::default().with_mapping(seed_to_soil);
-        // .with_mapping(soil_to_fertilizer);
-        assert_eq!(ag_map.convert("seed", "soil", 14), Some(14));
+        #[test]
+        fn convert_source_input_to_direct_dest_output() {
+            let seed_to_soil = Mapping::new("seed", "soil")
+                .with_range(MappingRange::new(50, 98, 2))
+                .with_range(MappingRange::new(52, 50, 48));
+            let ag_map = AgMap::default().with_mapping(seed_to_soil);
+            assert_eq!(ag_map.convert("seed", "soil", 14), Some(14));
+        }
+
+        #[test]
+        fn convert_source_input_to_indirect_dest_output() {
+            let seed_to_soil = Mapping::new("seed", "soil")
+                .with_range(MappingRange::new(50, 98, 2))
+                .with_range(MappingRange::new(52, 50, 48));
+            let soil_to_fertilizer = Mapping::new("soil", "fertilizer")
+                .with_range(MappingRange::new(0, 15, 37))
+                .with_range(MappingRange::new(37, 52, 2))
+                .with_range(MappingRange::new(39, 0, 15));
+            let ag_map = AgMap::default()
+                .with_mapping(seed_to_soil)
+                .with_mapping(soil_to_fertilizer);
+            assert_eq!(ag_map.convert("seed", "fertilizer", 14), Some(53));
+        }
+
+        #[test]
+        fn returns_none_if_source_input_cannot_convert_to_dest_output() {
+            let seed_to_soil = Mapping::new("seed", "soil")
+                .with_range(MappingRange::new(50, 98, 2))
+                .with_range(MappingRange::new(52, 50, 48));
+            let soil_to_fertilizer = Mapping::new("soil", "fertilizer")
+                .with_range(MappingRange::new(0, 15, 37))
+                .with_range(MappingRange::new(37, 52, 2))
+                .with_range(MappingRange::new(39, 0, 15));
+            let ag_map = AgMap::default()
+                .with_mapping(seed_to_soil)
+                .with_mapping(soil_to_fertilizer);
+            assert_eq!(ag_map.convert("seed", "farmland", 14), None);
+        }
     }
 }
