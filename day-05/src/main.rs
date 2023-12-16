@@ -77,8 +77,8 @@ impl AgMap {
     pub fn convert(
         &self,
         source_category: &str,
-        dest_category: &str,
         source_id: u32,
+        dest_category: &str,
     ) -> Option<u32> {
         let mut category = source_category;
         let mut id = source_id;
@@ -185,7 +185,7 @@ mod test {
                 .with_range(MappingRange::new(50, 98, 2))
                 .with_range(MappingRange::new(52, 50, 48));
             let ag_map = AgMap::default().with_mapping(seed_to_soil);
-            assert_eq!(ag_map.convert("seed", "soil", 14), Some(14));
+            assert_eq!(ag_map.convert("seed", 14, "soil"), Some(14));
         }
 
         #[test]
@@ -200,7 +200,7 @@ mod test {
             let ag_map = AgMap::default()
                 .with_mapping(seed_to_soil)
                 .with_mapping(soil_to_fertilizer);
-            assert_eq!(ag_map.convert("seed", "fertilizer", 14), Some(53));
+            assert_eq!(ag_map.convert("seed", 14, "fertilizer"), Some(53));
         }
 
         #[test]
@@ -215,7 +215,7 @@ mod test {
             let ag_map = AgMap::default()
                 .with_mapping(seed_to_soil)
                 .with_mapping(soil_to_fertilizer);
-            assert_eq!(ag_map.convert("seed", "farmland", 14), None);
+            assert_eq!(ag_map.convert("seed", 14, "farmland"), None);
         }
     }
 }
