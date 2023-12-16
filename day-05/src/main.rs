@@ -12,10 +12,10 @@ pub struct MappingRange {
 }
 
 impl MappingRange {
-    pub fn new(source_range_start: u32, dest_range_start: u32, range_length: u32) -> MappingRange {
+    pub fn new(dest_range_start: u32, source_range_start: u32, range_length: u32) -> MappingRange {
         MappingRange {
-            source_range_start,
             dest_range_start,
+            source_range_start,
             range_length,
         }
     }
