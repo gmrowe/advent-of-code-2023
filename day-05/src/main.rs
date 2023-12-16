@@ -1,9 +1,10 @@
-//
+use std::collections::HashMap;
 
 fn main() {
     println!("Hello, world!");
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct MappingRange {
     source_range_start: u32,
     dest_range_start: u32,
@@ -28,13 +29,26 @@ impl MappingRange {
     }
 }
 
+#[derive(Debug, Clone, Default)]
 pub struct Mapping {
-    source_cat: &'static str,
-    dest_cat: &'static str,
     ranges: Vec<MappingRange>,
+    source_category: String,
+    dest_category: String,
 }
 
 impl Mapping {
+    pub fn new(source_category: &str, dest_category: &str) -> Self {
+        Mapping {
+            source_category: source_category.to_string(),
+            dest_category: dest_category.to_string(),
+            ..Self::default()
+        }
+    }
+    pub fn with_range(mut self, mapping_range: MappingRange) -> Self {
+        self.ranges.push(mapping_range);
+        self
+    }
+
     pub fn convert(&self, source: u32) -> u32 {
         self.ranges
             .iter()
@@ -44,19 +58,36 @@ impl Mapping {
     }
 }
 
-struct AgMap {}
+#[derive(Default, Clone)]
+pub struct AgMap {
+    mappings: HashMap<String, Mapping>,
+}
 
 impl AgMap {
-    pub fn new() -> Self {
-        AgMap {}
+    pub fn mappings_len(&self) -> usize {
+        self.mappings.len()
     }
 
-    pub fn with_mapping(self, mapping: Mapping) -> Self {
-        todo!()
+    pub fn with_mapping(mut self, mapping: Mapping) -> AgMap {
+        self.mappings
+            .insert(mapping.source_category.clone(), mapping);
+        self
     }
 
-    pub fn convert(&self, source: &str, dest: &str, source_num: u32) -> u32 {
-        todo!()
+    pub fn convert(&self, source_category: &str, dest_category: &str, input: u32) -> Option<u32> {
+        let mut done = false;
+        let mut curr_category = source_category.to_string();
+        let mut curr_input = input;
+        while !done {
+            if curr_category != dest_category {
+                let curr_mapping = self.mappings.get(&curr_category)?;
+                curr_input = curr_mapping.convert(curr_input);
+                curr_category = curr_mapping.dest_category.clone();
+            } else {
+                done = true;
+            }
+        }
+        Some(curr_input)
     }
 }
 
@@ -100,48 +131,63 @@ mod test {
         }
     }
 
-    #[test]
-    fn when_source_is_in_a_range_the_range_converts_it() {
-        let mapping = Mapping {
-            source_cat: "",
-            dest_cat: "",
-            ranges: vec![MappingRange::new(50, 98, 2), MappingRange::new(52, 50, 48)],
-        };
-        let source = 55;
-        assert_eq!(mapping.convert(source), 53);
+    mod with_a_valid_mapping {
+        use super::*;
+
+        #[test]
+        fn when_source_is_in_a_range_the_range_converts_it() {
+            let mapping = Mapping::default()
+                .with_range(MappingRange::new(50, 98, 2))
+                .with_range(MappingRange::new(52, 50, 48));
+            let source = 55;
+            assert_eq!(mapping.convert(source), 53);
+        }
+
+        #[test]
+        fn when_source_is_not_in_a_range_it_is_converted_to_same_dest_number() {
+            let mapping = Mapping::default()
+                .with_range(MappingRange::new(50, 98, 2))
+                .with_range(MappingRange::new(52, 50, 48));
+            let source = 10;
+            assert_eq!(mapping.convert(source), 10);
+        }
+
+        #[test]
+        fn when_quried_returns_its_source_category() {
+            let mapping = Mapping::new("seed", "");
+            assert_eq!(mapping.source_category, "seed")
+        }
+
+        #[test]
+        fn when_quried_returns_its_destination_category() {
+            let mapping = Mapping::new("", "fertilizer");
+            assert_eq!(mapping.dest_category, "fertilizer")
+        }
     }
 
     #[test]
-    fn when_source_is_not_in_a_range_it_is_converted_to_same_dest_number() {
-        let mapping = Mapping {
-            source_cat: "",
-            dest_cat: "",
-            ranges: vec![MappingRange::new(50, 98, 2), MappingRange::new(52, 50, 48)],
-        };
-        let source = 10;
-        assert_eq!(mapping.convert(source), 10);
+    fn when_an_ag_map_is_created_it_has_no_mappings() {
+        let ag_map = AgMap::default();
+        assert_eq!(ag_map.mappings_len(), 0)
     }
 
     #[test]
-    fn f() {
-        let seed_to_soil = Mapping {
-            source_cat: "seed",
-            dest_cat: "soil",
-            ranges: vec![MappingRange::new(50, 98, 2), MappingRange::new(52, 50, 48)],
-        };
+    fn an_ag_map_can_have_mappings_added() {
+        let ag_map = AgMap::default().with_mapping(Mapping::default());
+        assert_eq!(ag_map.mappings_len(), 1);
+    }
 
-        let soil_to_fertilizer = Mapping {
-            source_cat: "soil",
-            dest_cat: "fertilizer",
-            ranges: vec![
-                MappingRange::new(0, 15, 37),
-                MappingRange::new(37, 52, 2),
-                MappingRange::new(39, 0, 15),
-            ],
-        };
-        let ag_map = AgMap::new()
-            .with_mapping(seed_to_soil)
-            .with_mapping(soil_to_fertilizer);
-        assert_eq!(ag_map.convert("seed", "fertilizer", 13), 52)
+    #[test]
+    fn an_ag_map_with_valid_mappings_can_convert_source_input_to_dest_output() {
+        let seed_to_soil = Mapping::new("seed", "soil")
+            .with_range(MappingRange::new(50, 98, 2))
+            .with_range(MappingRange::new(52, 50, 48));
+        let soil_to_fertilizer = Mapping::new("soil", "fertilizer")
+            .with_range(MappingRange::new(0, 15, 37))
+            .with_range(MappingRange::new(37, 52, 2))
+            .with_range(MappingRange::new(39, 0, 15));
+        let ag_map = AgMap::default().with_mapping(seed_to_soil);
+        // .with_mapping(soil_to_fertilizer);
+        assert_eq!(ag_map.convert("seed", "soil", 14), Some(14));
     }
 }
