@@ -74,20 +74,20 @@ impl AgMap {
         self
     }
 
-    pub fn convert(&self, source_category: &str, dest_category: &str, input: u32) -> Option<u32> {
-        let mut done = false;
-        let mut curr_category = source_category.to_string();
-        let mut curr_input = input;
-        while !done {
-            if curr_category != dest_category {
-                let curr_mapping = self.mappings.get(&curr_category)?;
-                curr_input = curr_mapping.convert(curr_input);
-                curr_category = curr_mapping.dest_category.clone();
-            } else {
-                done = true;
-            }
+    pub fn convert(
+        &self,
+        source_category: &str,
+        dest_category: &str,
+        source_id: u32,
+    ) -> Option<u32> {
+        let mut category = source_category;
+        let mut id = source_id;
+        while category != dest_category {
+            let mapping = self.mappings.get(category)?;
+            id = mapping.convert(id);
+            category = &mapping.dest_category;
         }
-        Some(curr_input)
+        Some(id)
     }
 }
 
