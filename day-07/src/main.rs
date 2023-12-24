@@ -1,5 +1,4 @@
-#![allow(unused)]
-use std::{env, fs, io, os::unix::thread::JoinHandleExt, str::FromStr};
+use std::{env, fs, io, str::FromStr};
 
 enum AOCErr {
     NoInputProvided,
@@ -91,6 +90,9 @@ fn get_jokers_wild_best_counts(hand: &Hand) -> [usize; 13] {
         .iter()
         .position(|count| count == high_count)
         .expect("Some positon must have high count");
+
+    // We will always get the best hand by adding the jokers to the
+    // position that has "most of a kind"
     counts[high_count_position] += joker_count;
     counts
 }
@@ -110,6 +112,8 @@ fn sort_jokers_wild(h1: &Hand, h2: &Hand) -> std::cmp::Ordering {
         .zip(h2.cards.iter())
         .find(|(c1, c2)| c1 != c2)
         .map_or(std::cmp::Ordering::Equal, |(c1, c2)| match (c1, c2) {
+            // Jacks (which are Jokers in this scheme) are always
+            // sorted as less-than non-Jacks.
             (&Card::Jack, _) => std::cmp::Ordering::Less,
             (_, &Card::Jack) => std::cmp::Ordering::Greater,
             (c1, c2) => c1.cmp(c2),
