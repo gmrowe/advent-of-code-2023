@@ -56,21 +56,19 @@ fn part_02(input: &str) -> String {
 }
 
 fn score_counts(counts: &[usize]) -> Score {
-    fn n_of_a_kind(counts: &[usize], n: usize) -> usize {
-        counts.iter().filter(|count| **count == n).count()
-    }
+    let n_of_a_kind = |n: usize| counts.iter().filter(|count| **count == n).count();
 
-    if n_of_a_kind(counts, 5) == 1 {
+    if n_of_a_kind(5) == 1 {
         Score::FiveOfAKind
-    } else if n_of_a_kind(counts, 4) == 1 {
+    } else if n_of_a_kind(4) == 1 {
         Score::FourOfAKind
-    } else if n_of_a_kind(counts, 3) == 1 && n_of_a_kind(counts, 2) == 1 {
+    } else if n_of_a_kind(3) == 1 && n_of_a_kind(2) == 1 {
         Score::FullHouse
-    } else if n_of_a_kind(counts, 3) == 1 {
+    } else if n_of_a_kind(3) == 1 {
         Score::ThreeOfAKind
-    } else if n_of_a_kind(counts, 2) == 2 {
+    } else if n_of_a_kind(2) == 2 {
         Score::TwoPair
-    } else if n_of_a_kind(counts, 2) == 1 {
+    } else if n_of_a_kind(2) == 1 {
         Score::Pair
     } else {
         Score::HighCard
