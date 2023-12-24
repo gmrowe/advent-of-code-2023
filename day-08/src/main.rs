@@ -82,17 +82,18 @@ impl Map {
         }
     }
 
-    fn path_steps_part_01(&self) -> usize {
-        const START: &str = "AAA";
-        const END: &str = "ZZZ";
-        let mut location = START;
+    fn path_steps<P>(&self, start: &str, end_condition: P) -> usize
+    where
+        P: Fn(&str) -> bool,
+    {
+        let mut loc = start;
         for (i, c) in self.dirs.chars().cycle().enumerate() {
-            if location == END {
+            if end_condition(loc) {
                 return i;
             }
 
-            let mapping = self.mappings.get(location).unwrap();
-            location = match c {
+            let mapping = self.mappings.get(loc).unwrap();
+            loc = match c {
                 'L' => &mapping.0,
                 'R' => &mapping.1,
                 _ => unreachable!(),
@@ -101,27 +102,15 @@ impl Map {
         0
     }
 
-    fn path_steps_part_02(&self) -> usize {
-        let cycle_length = |start: &str| -> usize {
-            let mut location = start;
-            for (i, c) in self.dirs.chars().cycle().enumerate() {
-                if location.ends_with('Z') {
-                    return i;
-                }
+    fn path_steps_part_01(&self) -> usize {
+        self.path_steps("AAA", |s| s == "ZZZ")
+    }
 
-                let mapping = self.mappings.get(location).unwrap();
-                location = match c {
-                    'L' => &mapping.0,
-                    'R' => &mapping.1,
-                    _ => unreachable!(),
-                };
-            }
-            0
-        };
+    fn path_steps_part_02(&self) -> usize {
         self.mappings
             .keys()
             .filter(|k| k.ends_with('A'))
-            .map(|k| cycle_length(k))
+            .map(|k| self.path_steps(k, |s| s.ends_with('Z')))
             .fold(1, lcm)
     }
 }
@@ -187,7 +176,7 @@ mod test {
         use super::*;
 
         #[test]
-        fn f() {
+        fn correctly_runs_example_data() {
             let dirs = "LR";
             let mappings = "11A = (11B, XXX)\n\
                             11B = (XXX, 11Z)\n\
