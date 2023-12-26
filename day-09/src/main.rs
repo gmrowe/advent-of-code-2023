@@ -41,7 +41,12 @@ fn part_01(input: &str) -> String {
 }
 
 fn part_02(input: &str) -> String {
-    "TODO".to_string()
+    input
+        .lines()
+        .map(line_to_i32s)
+        .map(|v| predict_first(&v))
+        .sum::<i32>()
+        .to_string()
 }
 
 fn line_to_i32s(line: &str) -> Vec<i32> {
@@ -57,6 +62,15 @@ fn predict_next(seq: &[i32]) -> i32 {
 
     let diffs = seq.windows(2).map(|d| d[1] - d[0]).collect::<Vec<_>>();
     seq.last().unwrap() + predict_next(&diffs)
+}
+
+fn predict_first(seq: &[i32]) -> i32 {
+    if seq.iter().all(|n| *n == 0) {
+        return 0;
+    }
+
+    let diffs = seq.windows(2).map(|d| d[1] - d[0]).collect::<Vec<_>>();
+    seq.first().unwrap() - predict_first(&diffs)
 }
 
 #[cfg(test)]
@@ -100,5 +114,11 @@ mod test {
     fn predict_non_obvious_increasing_series() {
         let seq = [10, 13, 16, 21, 30, 45];
         assert_eq!(predict_next(&seq), 68);
+    }
+
+    #[test]
+    fn predict_the_first_value_in_a_series() {
+        let seq = [10, 13, 16, 21, 30, 45];
+        assert_eq!(predict_first(&seq), 5);
     }
 }
