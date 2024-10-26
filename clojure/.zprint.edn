@@ -1,0 +1,4 @@
+{:width 80
+ :vector {:respect-nl? true}
+ :fn-map {"defn" :arg1-force-nl}
+ :list {:indent-arg 2}}

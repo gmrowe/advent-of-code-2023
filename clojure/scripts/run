@@ -1,0 +1,5 @@
+#! /usr/bin/env bb
+
+(defn run [& opts] (println "Hello world"))
+
+(when (= *file* (System/getProperty "babashka.file")) (apply run *command-line-args*))
